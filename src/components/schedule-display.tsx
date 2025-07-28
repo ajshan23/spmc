@@ -90,12 +90,18 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
     try {
       toast({ title: "Generating PDF...", description: "Please wait a moment." });
 
-      // Convert Date objects to ISO strings to avoid timezone issues
+      // Pre-format all dates on the client side to avoid server timezone issues
       const scheduleForPdf = {
         patientName: schedule.patientName,
         procedureDateTime: schedule.procedureDateTime.toISOString(),
+        procedureDateFormatted: format(schedule.procedureDateTime, 'MMMM do, yyyy'),
+        procedureTimeFormatted: format(schedule.procedureDateTime, 'h:mm a'),
+        registrationTimeFormatted: format(new Date(schedule.procedureDateTime.getTime() - 30 * 60 * 1000), 'h:mm a'),
         lastMealTime: schedule.lastMealTime.toISOString(),
-        doses: schedule.doses.map(dose => dose.toISOString()),
+        doses: schedule.doses.map(dose => ({
+          time: dose.toISOString(),
+          timeFormatted: format(dose, 'h:mm a')
+        })),
         hospital: schedule.hospital || 'To be confirmed'
       };
 

@@ -1,15 +1,20 @@
 // src/app/api/generate-pdf/route.ts
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
-import { format, parseISO } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
 interface ScheduleData {
   patientName: string;
-  procedureDateTime: string; // Keep as string
-  lastMealTime: string; // Keep as string
-  doses: string[]; // Keep as string array
+  procedureDateTime: string;
+  procedureDateFormatted: string;
+  procedureTimeFormatted: string;
+  registrationTimeFormatted: string;
+  lastMealTime: string;
+  doses: Array<{
+    time: string;
+    timeFormatted: string;
+  }>;
   hospital?: string;
 }
 
@@ -24,24 +29,7 @@ export async function POST(req: Request) {
 
     const page = await browser.newPage();
     
-    // Format dates directly from ISO strings to avoid timezone issues
-    const formatDateTime = (dateString: string) => {
-      const date = parseISO(dateString);
-      return format(date, 'MMMM do, yyyy');
-    };
-
-    const formatTime = (dateString: string) => {
-      const date = parseISO(dateString);
-      return format(date, 'h:mm a');
-    };
-
-    const getRegistrationTime = (dateString: string) => {
-      const date = parseISO(dateString);
-      const registrationTime = new Date(date.getTime() - 30 * 60 * 1000);
-      return format(registrationTime, 'h:mm a');
-    };
-
-    // Set the HTML content with proper date formatting
+    // Set the HTML content with pre-formatted date strings
     await page.setContent(`
       <!DOCTYPE html>
       <html lang="${lang}">
@@ -118,12 +106,17 @@ export async function POST(req: Request) {
               <h2 class="orange" style="margin: 0;">Your procedure is scheduled for:</h2>
               <div class="info-line">
                 <div class="info-item">
-                  <strong>Date:</strong> <span class="underline">${formatDateTime(schedule.procedureDateTime)}</span>
+                  <strong>Date:</strong> <span class="underline">${schedule.procedureDateFormatted}</span>
                 </div>
                 <div class="info-item">
-                  <strong>Time:</strong> <span class="underline">${formatTime(schedule.procedureDateTime)}</span>
+                  <strong>Time:</strong> <span class="underline">${schedule.procedureTimeFormatted}</span>
                 </div>
-                
+                <div class="info-item">
+                  <strong>Hospital:</strong> <span class="underline">${schedule.hospital || 'To be confirmed'}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Register at hospital by:</strong> <span class="underline">${schedule.registrationTimeFormatted}</span>
+                </div>
               </div>
             </td>
           </tr>
@@ -175,9 +168,9 @@ export async function POST(req: Request) {
 
         <!-- Schedule Table -->
         <table class="dose-table" style="margin-top: 20px;">
-          ${schedule.doses.map(doseString => `
+          ${schedule.doses.map(dose => `
             <tr>
-              <td>${formatTime(doseString)}</td>
+              <td>${dose.timeFormatted}</td>
               <td><span class="bold">Take 1 sachet of <span class="blue">SPMC</span></span></td>
               <td>Should drink 1L of water or clear fluid after each preparation</td>
             </tr>
