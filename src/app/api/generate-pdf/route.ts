@@ -1,23 +1,21 @@
 // src/app/api/generate-pdf/route.ts
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
-import type { Schedule } from '@/lib/schedule';
 import { format, parseISO } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
+interface ScheduleData {
+  patientName: string;
+  procedureDateTime: string; // Keep as string
+  lastMealTime: string; // Keep as string
+  doses: string[]; // Keep as string array
+  hospital?: string;
+}
+
 export async function POST(req: Request) {
   try {
-    const { schedule: rawSchedule, lang }: { schedule: any; lang: 'en' | 'ar' } = await req.json();
-
-    // Convert dates to Date objects
-    const schedule: Schedule = {
-      patientName: rawSchedule.patientName,
-      procedureDateTime: new Date(rawSchedule.procedureDateTime),
-      lastMealTime: new Date(rawSchedule.lastMealTime),
-      doses: rawSchedule.doses.map((d: string) => new Date(d)),
-      hospital: rawSchedule.hospital || 'To be confirmed'
-    };
+    const { schedule, lang }: { schedule: ScheduleData; lang: 'en' | 'ar' } = await req.json();
 
     const browser = await puppeteer.launch({
       headless: 'shell',
@@ -26,6 +24,23 @@ export async function POST(req: Request) {
 
     const page = await browser.newPage();
     
+    // Format dates directly from ISO strings to avoid timezone issues
+    const formatDateTime = (dateString: string) => {
+      const date = parseISO(dateString);
+      return format(date, 'MMMM do, yyyy');
+    };
+
+    const formatTime = (dateString: string) => {
+      const date = parseISO(dateString);
+      return format(date, 'h:mm a');
+    };
+
+    const getRegistrationTime = (dateString: string) => {
+      const date = parseISO(dateString);
+      const registrationTime = new Date(date.getTime() - 30 * 60 * 1000);
+      return format(registrationTime, 'h:mm a');
+    };
+
     // Set the HTML content with proper date formatting
     await page.setContent(`
       <!DOCTYPE html>
@@ -103,17 +118,12 @@ export async function POST(req: Request) {
               <h2 class="orange" style="margin: 0;">Your procedure is scheduled for:</h2>
               <div class="info-line">
                 <div class="info-item">
-                  <strong>Date:</strong> <span class="underline">${format(schedule.procedureDateTime, 'MMMM do, yyyy')}</span>
+                  <strong>Date:</strong> <span class="underline">${formatDateTime(schedule.procedureDateTime)}</span>
                 </div>
                 <div class="info-item">
-                  <strong>Time:</strong> <span class="underline">${format(schedule.procedureDateTime, 'h:mm a')}</span>
+                  <strong>Time:</strong> <span class="underline">${formatTime(schedule.procedureDateTime)}</span>
                 </div>
-                <div class="info-item">
-                  <strong>Hospital:</strong> <span class="underline">${schedule.hospital}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Register at hospital by:</strong> <span class="underline">${format(new Date(schedule.procedureDateTime.getTime() - 30 * 60 * 1000), 'h:mm a')}</span>
-                </div>
+                
               </div>
             </td>
           </tr>
@@ -165,9 +175,9 @@ export async function POST(req: Request) {
 
         <!-- Schedule Table -->
         <table class="dose-table" style="margin-top: 20px;">
-          ${schedule.doses.map(dose => `
+          ${schedule.doses.map(doseString => `
             <tr>
-              <td>${format(dose, 'h:mm a')}</td>
+              <td>${formatTime(doseString)}</td>
               <td><span class="bold">Take 1 sachet of <span class="blue">SPMC</span></span></td>
               <td>Should drink 1L of water or clear fluid after each preparation</td>
             </tr>
@@ -315,9 +325,9 @@ export async function POST(req: Request) {
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      preferCSSPageSize: true , // This is the key option to prevent unwanted page breaks
+      preferCSSPageSize: true,
       scale: 0.72,
-      printBackground:true
+      printBackground: true
     });
 
     await browser.close();

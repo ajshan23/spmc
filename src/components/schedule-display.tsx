@@ -90,12 +90,21 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
     try {
       toast({ title: "Generating PDF...", description: "Please wait a moment." });
 
+      // Convert Date objects to ISO strings to avoid timezone issues
+      const scheduleForPdf = {
+        patientName: schedule.patientName,
+        procedureDateTime: schedule.procedureDateTime.toISOString(),
+        lastMealTime: schedule.lastMealTime.toISOString(),
+        doses: schedule.doses.map(dose => dose.toISOString()),
+        hospital: schedule.hospital || 'To be confirmed'
+      };
+
       const response = await fetch('/api/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ schedule, lang }),
+        body: JSON.stringify({ schedule: scheduleForPdf, lang }),
       });
 
       if (!response.ok) {
@@ -110,6 +119,12 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({ 
+        title: "PDF Generated Successfully!", 
+        description: "Your schedule has been downloaded." 
+      });
       
     } catch (error) {
       console.error("Failed to generate PDF", error);
