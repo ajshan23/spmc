@@ -316,7 +316,7 @@ export async function POST(req: Request) {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true , // This is the key option to prevent unwanted page breaks
-      scale: 0.75,
+      scale: 0.72,
       printBackground:true
     });
 

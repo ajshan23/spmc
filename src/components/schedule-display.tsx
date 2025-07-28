@@ -164,7 +164,7 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
               Actions
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              <Button variant="outline" onClick={() => handleShare('whatsapp')}>
+              {/* <Button variant="outline" onClick={() => handleShare('whatsapp')}>
                 <WhatsAppIcon className="mr-2" /> WhatsApp
               </Button>
               <Button variant="outline" onClick={() => handleShare('email')}>
@@ -172,7 +172,7 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
               </Button>
               <Button variant="outline" onClick={handleCopyLink}>
                 <Copy className="mr-2" /> Copy Link
-              </Button>
+              </Button> */}
               <Button variant="outline" onClick={() => handleDownloadPdf('en')}>
                 <Download className="mr-2" /> English PDF
               </Button>
