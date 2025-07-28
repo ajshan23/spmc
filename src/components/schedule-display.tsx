@@ -174,11 +174,11 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
                 <Copy className="mr-2" /> Copy Link
               </Button> */}
               <Button variant="outline" onClick={() => handleDownloadPdf('en')}>
-                <Download className="mr-2" /> English PDF
+                <Download className="mr-2" /> Download PDF
               </Button>
-              <Button variant="outline" onClick={() => handleDownloadPdf('ar')}>
+              {/* <Button variant="outline" onClick={() => handleDownloadPdf('ar')}>
                 <Download className="mr-2" /> Arabic PDF
-              </Button>
+              </Button> */}
               <Button variant="destructive" onClick={onReset}>
                 <RotateCcw className="mr-2" /> Reset
               </Button>
