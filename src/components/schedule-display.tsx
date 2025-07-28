@@ -1,4 +1,3 @@
-// src/components/schedule-display.tsx
 'use client';
 
 import { format } from 'date-fns';
@@ -96,7 +95,10 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
         procedureDateTime: schedule.procedureDateTime.toISOString(),
         procedureDateFormatted: format(schedule.procedureDateTime, 'MMMM do, yyyy'),
         procedureTimeFormatted: format(schedule.procedureDateTime, 'h:mm a'),
-        registrationTimeFormatted: format(new Date(schedule.procedureDateTime.getTime() - 30 * 60 * 1000), 'h:mm a'),
+        registrationTimeFormatted: format(
+          new Date(schedule.procedureDateTime.getTime() - 30 * 60 * 1000), 
+          'h:mm a'
+        ),
         lastMealTime: schedule.lastMealTime.toISOString(),
         doses: schedule.doses.map(dose => ({
           time: dose.toISOString(),
@@ -105,12 +107,76 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
         hospital: schedule.hospital || 'To be confirmed'
       };
 
-      const response = await fetch('/api/generate-pdf', {
+      // Determine the endpoint based on language
+      const endpoint = lang === 'ar' ? '/api/generate-pdf-arabic' : '/api/generate-pdf';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ schedule: scheduleForPdf, lang }),
+        body: JSON.stringify({ schedule: scheduleForPdf }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `SPMC_Schedule_${schedule.patientName.replace(/\s/g, '_')}_${lang}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({ 
+        title: "PDF Generated Successfully!", 
+        description: "Your schedule has been downloaded." 
+      });
+      
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
+      toast({ 
+        variant: "destructive", 
+        title: "PDF Generation Failed", 
+        description: "An unexpected error occurred while generating the PDF." 
+      });
+    }
+  };
+  const handleDownloadPdfAr = async (lang: 'en' | 'ar') => {
+    try {
+      toast({ title: "Generating PDF...", description: "Please wait a moment." });
+
+      // Pre-format all dates on the client side to avoid server timezone issues
+      const scheduleForPdf = {
+        patientName: schedule.patientName,
+        procedureDateTime: schedule.procedureDateTime.toISOString(),
+        procedureDateFormatted: format(schedule.procedureDateTime, 'MMMM do, yyyy'),
+        procedureTimeFormatted: format(schedule.procedureDateTime, 'h:mm a'),
+        registrationTimeFormatted: format(
+          new Date(schedule.procedureDateTime.getTime() - 30 * 60 * 1000), 
+          'h:mm a'
+        ),
+        lastMealTime: schedule.lastMealTime.toISOString(),
+        doses: schedule.doses.map(dose => ({
+          time: dose.toISOString(),
+          timeFormatted: format(dose, 'h:mm a')
+        })),
+        hospital: schedule.hospital || 'To be confirmed'
+      };
+
+      // Determine the endpoint based on language
+      const endpoint =  '/api/generate-pdf-arabic';
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ schedule: scheduleForPdf }),
       });
 
       if (!response.ok) {
@@ -185,19 +251,10 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
               Actions
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              {/* <Button variant="outline" onClick={() => handleShare('whatsapp')}>
-                <WhatsAppIcon className="mr-2" /> WhatsApp
-              </Button>
-              <Button variant="outline" onClick={() => handleShare('email')}>
-                <Mail className="mr-2" /> Email
-              </Button>
-              <Button variant="outline" onClick={handleCopyLink}>
-                <Copy className="mr-2" /> Copy Link
-              </Button> */}
               <Button variant="outline" onClick={() => handleDownloadPdf('en')}>
                 <Download className="mr-2" /> English PDF
               </Button>
-              <Button variant="outline" onClick={() => handleDownloadPdf('ar')}>
+              <Button variant="outline" onClick={() => handleDownloadPdfAr('ar')}>
                 <Download className="mr-2" /> Arabic PDF
               </Button>
               <Button variant="destructive" onClick={onReset}>

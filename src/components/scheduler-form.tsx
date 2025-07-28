@@ -141,7 +141,7 @@ export function SchedulerForm({
                 control={form.control}
                 name="procedureDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="flex flex-col gap-y-1 pt-1.5">
                     <FormLabel>Procedure Date</FormLabel>
                     <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
                       <PopoverTrigger asChild>
