@@ -1,36 +1,14 @@
-
+// src/components/schedule-display.tsx
 'use client';
 
 import { format } from 'date-fns';
-import {
-  Calendar,
-  Clock,
-  UtensilsCrossed,
-  Droplets,
-  Stethoscope,
-  Share2,
-  Mail,
-  Copy,
-  Download,
-  RotateCcw,
-} from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Calendar, Clock, UtensilsCrossed, Droplets, Stethoscope, Share2, Mail, Copy, Download, RotateCcw } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import type { Schedule } from '@/lib/schedule';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { WhatsAppIcon } from './icons/whatsapp-icon';
-import { useToast } from "@/hooks/use-toast"
-import { useRef } from 'react';
+import { Button } from './ui/button';
+import { Separator } from '@radix-ui/react-select';
 
 interface ScheduleDisplayProps {
   schedule: Schedule;
@@ -64,79 +42,8 @@ const timelineItems = (schedule: Schedule) => [
   },
 ];
 
-const SchedulePrintable = ({ schedule, lang, printableRef }: { schedule: Schedule, lang: 'en' | 'ar', printableRef: React.RefObject<HTMLDivElement> }) => {
-    const isArabic = lang === 'ar';
-    const translations = {
-      title: isArabic ? "جدول الجرعات" : "Dosing Schedule",
-      patient: isArabic ? "المريض" : "Patient",
-      procedureOn: isArabic ? "الإجراء في" : "Procedure on",
-      lastMeal: isArabic ? "آخر وجبة" : "Last Meal",
-      dose: isArabic ? "الجرعة" : "Dose",
-      procedure: isArabic ? "وقت الإجراء" : "Procedure Time",
-      footer: isArabic ? "هذا الجدول لأغراض إعلامية فقط. اتبع دائمًا تعليمات طبيبك." : "This schedule is for informational purposes. Always follow your doctor's instructions.",
-    };
-
-    const items = timelineItems(schedule);
-
-    return (
-        <div 
-          ref={printableRef}
-          dir={isArabic ? 'rtl' : 'ltr'} 
-          className="font-body bg-background p-8"
-          style={{ width: '800px' }}
-        >
-          <style>{`
-            .font-body { font-family: 'Roboto', sans-serif; }
-            .font-headline { font-family: 'Roboto', sans-serif; font-weight: 700; }
-          `}</style>
-          <Card className="w-full shadow-lg border-2 border-primary">
-            <CardHeader className="text-center">
-                <CardTitle className="font-headline text-4xl text-primary">
-                SPMC
-                </CardTitle>
-                <CardDescription className="text-lg">
-                    {translations.title} for {schedule.patientName}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-4">
-              <div className="relative pl-8">
-                <div className="absolute left-11 top-4 bottom-4 w-0.5 bg-border"></div>
-                {items.map((item, index) => (
-                  <div key={index} className="flex items-start gap-6 mb-8 last:mb-0">
-                    <div
-                      className={`flex-shrink-0 w-10 h-10 ${item.color} flex items-center justify-center rounded-full bg-background relative z-10 -left-1 mt-1 ring-4 ring-background`}
-                    >
-                      <item.icon className="w-6 h-6" />
-                    </div>
-                    <div className="flex-grow">
-                      <p className="font-headline text-xl">{isArabic ? item.title === 'Last Meal' ? translations.lastMeal : item.title.replace('Dose', translations.dose) : item.title}</p>
-                      <p className="text-md text-muted-foreground flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {format(item.time, "eeee, MMMM do 'at' h:mm a")}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter className="flex-col items-center justify-center text-center text-xs text-muted-foreground pt-4">
-                <Separator className="my-2" />
-                <p>{translations.footer}</p>
-            </CardFooter>
-          </Card>
-        </div>
-    );
-};
-
-
 export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
   const { toast } = useToast();
-  const printableRef = useRef<HTMLDivElement>(null);
-  const printableRefEn = useRef<HTMLDivElement>(null);
-  const printableRefAr = useRef<HTMLDivElement>(null);
 
   const generateShareText = () => {
     let text = `Dosing Schedule for ${schedule.patientName}:\n\n`;
@@ -179,41 +86,40 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
     });
   };
   
-  const handleDownloadPdf = async () => {
-    const elementEn = printableRefEn.current;
-    const elementAr = printableRefAr.current;
-
-    if (!elementEn || !elementAr) {
-        toast({ variant: "destructive", title: "Error", description: "Could not find schedule content to download." });
-        return;
-    };
-    
-    toast({ title: "Generating PDF...", description: "Please wait a moment." });
-
+  const handleDownloadPdf = async (lang: 'en' | 'ar') => {
     try {
-        const canvasEn = await html2canvas(elementEn, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-        const canvasAr = await html2canvas(elementAr, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-        
-        const imgDataEn = canvasEn.toDataURL('image/png');
-        const imgDataAr = canvasAr.toDataURL('image/png');
-        
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'px',
-            format: [canvasEn.width, canvasEn.height]
-        });
+      toast({ title: "Generating PDF...", description: "Please wait a moment." });
 
-        pdf.addImage(imgDataEn, 'PNG', 0, 0, canvasEn.width, canvasEn.height);
-        pdf.addPage([canvasAr.width, canvasAr.height], 'p');
-        pdf.addImage(imgDataAr, 'PNG', 0, 0, canvasAr.width, canvasAr.height);
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ schedule, lang }),
+      });
 
-        pdf.save(`CitraFleet_Schedule_${schedule.patientName.replace(/\s/g, '_')}.pdf`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `SPMC_Schedule_${schedule.patientName.replace(/\s/g, '_')}_${lang}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
     } catch (error) {
-        console.error("Failed to generate PDF", error);
-        toast({ variant: "destructive", title: "PDF Generation Failed", description: "An unexpected error occurred." });
+      console.error("Failed to generate PDF", error);
+      toast({ 
+        variant: "destructive", 
+        title: "PDF Generation Failed", 
+        description: "An unexpected error occurred while generating the PDF." 
+      });
     }
   };
-
 
   return (
     <div className="mt-8">
@@ -252,38 +158,34 @@ export function ScheduleDisplay({ schedule, onReset }: ScheduleDisplayProps) {
             ))}
           </div>
           <Separator />
-           <div className="space-y-2 pt-2 no-print">
+          <div className="space-y-2 pt-2 no-print">
             <h3 className="font-semibold flex items-center gap-2 text-lg">
-                <Share2 className="h-5 w-5 text-primary" />
-                Actions
+              <Share2 className="h-5 w-5 text-primary" />
+              Actions
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                 {/* <Button variant="outline" onClick={() => handleShare('whatsapp')}>
-                    <WhatsAppIcon className="mr-2" /> WhatsApp
-                 </Button>
-                 <Button variant="outline" onClick={() => handleShare('email')}>
-                    <Mail /> Email
-                 </Button> */}
-                 <Button variant="outline" onClick={handleCopyLink}>
-                    <Copy /> Copy Link
-                 </Button>
-                 <Button variant="outline" onClick={handleDownloadPdf}>
-                    <Download /> Download
-                 </Button>
-                 <Button variant="destructive" onClick={onReset}>
-                    <RotateCcw /> Reset
-                 </Button>
+              <Button variant="outline" onClick={() => handleShare('whatsapp')}>
+                <WhatsAppIcon className="mr-2" /> WhatsApp
+              </Button>
+              <Button variant="outline" onClick={() => handleShare('email')}>
+                <Mail className="mr-2" /> Email
+              </Button>
+              <Button variant="outline" onClick={handleCopyLink}>
+                <Copy className="mr-2" /> Copy Link
+              </Button>
+              <Button variant="outline" onClick={() => handleDownloadPdf('en')}>
+                <Download className="mr-2" /> English PDF
+              </Button>
+              <Button variant="outline" onClick={() => handleDownloadPdf('ar')}>
+                <Download className="mr-2" /> Arabic PDF
+              </Button>
+              <Button variant="destructive" onClick={onReset}>
+                <RotateCcw className="mr-2" /> Reset
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-      {/* These elements are used for PDF generation and are not displayed on the page */}
-      <div className="absolute -left-[9999px] top-auto">
-        <SchedulePrintable schedule={schedule} lang="en" printableRef={printableRefEn} />
-      </div>
-      <div className="absolute -left-[9999px] top-auto">
-        <SchedulePrintable schedule={schedule} lang="ar" printableRef={printableRefAr} />
-      </div>
     </div>
   );
 }
