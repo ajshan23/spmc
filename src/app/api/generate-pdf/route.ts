@@ -111,12 +111,7 @@ export async function POST(req: Request) {
                 <div class="info-item">
                   <strong>Time:</strong> <span class="underline">${schedule.procedureTimeFormatted}</span>
                 </div>
-                <div class="info-item">
-                  <strong>Hospital:</strong> <span class="underline">${schedule.hospital || 'To be confirmed'}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Register at hospital by:</strong> <span class="underline">${schedule.registrationTimeFormatted}</span>
-                </div>
+               
               </div>
             </td>
           </tr>
