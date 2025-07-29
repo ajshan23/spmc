@@ -225,6 +225,10 @@ export async function POST(req: Request) {
                     <div class="info-item">
                       <strong>التاريخ:</strong> <span class="underline">${schedule.procedureDateFormatted}</span>
                     </div>
+                    
+                    <div class="info-item">
+                      <strong>اسم:</strong> <span class="underline">${schedule.patientName}</span>
+                    </div>
                     <div class="info-item">
                       <strong>الوقت:</strong> <span class="underline">${schedule.procedureTimeFormatted}</span>
                     </div>
