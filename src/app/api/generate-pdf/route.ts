@@ -298,12 +298,7 @@ export async function POST(req: Request) {
           </div>
 
           <!-- Note Section -->
-          <div style="margin-top: 40px;">
-            <strong>Note:</strong>
-            <div style="border-bottom: 1px solid #000; height: 20px; margin: 8px 0;"></div>
-            <div style="border-bottom: 1px solid #000; height: 20px; margin: 8px 0;"></div>
-            <div style="border-bottom: 1px solid #000; height: 20px; margin: 8px 0;"></div>
-          </div>
+          
         </div>
       </body>
       </html>
